@@ -1,4 +1,5 @@
-from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.document_loaders.generic import GenericLoader
+from langchain_community.document_loaders.parsers.txt import TextParser
 from langchain_community.vectorstores import Chroma
 from langchain_community import embeddings
 from langchain_community.chat_models import ChatOllama
@@ -12,13 +13,11 @@ from langchain.text_splitter import CharacterTextSplitter
 
 model_local = ChatOllama(model="mistral")
 
-# 1. Split data into chucks
-urls = [
-    "https://ollama.com",
-    "https://ollama.com/blog/windows-preview",
-    "https://ollama.com/blog/openai-compatibility",
+files = [
+    "../content/topics/bc/markdown/Newcomers-Guide-English.md",
+    "../content/topics/on/markdown/Settlement.Org-English.md"
 ]
-docs = [WebBaseLoader(url).load() for url in urls];
+docs = [GenericLoader.from_filesystem(file, show_progress=True, parser=TextParser()).load() for file in files]
 docs_list = [item for sublist in docs for item in sublist]
 text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size=7500, chunk_overlap=100)
 doc_splits = text_splitter.split_documents(docs_list)
@@ -37,7 +36,7 @@ print("Before RAG\n")
 before_rag_template = "What is {topic}"
 before_rag_prompt = ChatPromptTemplate.from_template(before_rag_template)
 before_rag_chain = before_rag_prompt | model_local | StrOutputParser()
-print(before_rag_chain.invoke({"topic" : "Ollama"}))
+print(before_rag_chain.invoke({"topic" : "Temporary foreign workers"}))
 
 # 4. After rAG
 print("\n###########\nAfter RAG")
@@ -52,4 +51,4 @@ after_rag_chain = (
     | model_local
     | StrOutputParser()
 )
-print(after_rag_chain.invoke("What is Ollama?"))
+print(after_rag_chain.invoke("What is a Temporary Foreign Worker?"))
